@@ -41,32 +41,61 @@ const Index = () => {
 
     const reader = new FileReader();
     reader.onload = (e) => {
-      setSelectedImage(e.target?.result as string);
-      simulateAnalysis();
+      const imageData = e.target?.result as string;
+      setSelectedImage(imageData);
+      analyzeImage(imageData);
     };
     reader.readAsDataURL(file);
   }, [toast]);
 
-  const simulateAnalysis = () => {
+  const analyzeImage = async (imageBase64: string) => {
     setIsAnalyzing(true);
     setAnalysisResult(null);
     
-    setTimeout(() => {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analyze-retinal-image`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({ imageBase64 }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Analysis failed');
+      }
+
+      const result = await response.json();
       setIsAnalyzing(false);
-      const mockResult = {
-        grade: 0,
-        confidence: 99.7,
-        recommendation: "✓ Annual screening recommended for disease prevention",
-        features: [],
-        timestamp: new Date().toLocaleString(),
-      };
-      setAnalysisResult(mockResult);
+      setAnalysisResult(result);
+      
+      const gradeMessages = [
+        "No diabetic retinopathy detected.",
+        "Mild diabetic retinopathy detected.",
+        "Moderate diabetic retinopathy detected.",
+        "Severe diabetic retinopathy detected.",
+        "Proliferative diabetic retinopathy detected."
+      ];
       
       toast({
         title: "Analysis Complete",
-        description: "No diabetic retinopathy detected.",
+        description: gradeMessages[result.grade] || "Analysis complete.",
+        variant: result.grade > 0 ? "destructive" : "default",
       });
-    }, 3500);
+    } catch (error) {
+      setIsAnalyzing(false);
+      console.error('Analysis error:', error);
+      toast({
+        title: "Analysis Failed",
+        description: error instanceof Error ? error.message : "Unable to analyze image. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleDrop = useCallback((e: React.DragEvent) => {
@@ -199,8 +228,20 @@ const Index = () => {
                 />
                 {analysisResult && (
                   <div className="absolute top-4 left-4">
-                    <span className="px-4 py-2 rounded-full bg-success/10 text-success text-xs font-bold uppercase backdrop-blur-sm border border-success/20">
-                      ✓ No DR Detected
+                    <span className={`px-4 py-2 rounded-full text-xs font-bold uppercase backdrop-blur-sm border ${
+                      analysisResult.grade === 0
+                        ? 'bg-success/10 text-success border-success/20'
+                        : analysisResult.grade === 1
+                        ? 'bg-warning/10 text-warning border-warning/20'
+                        : analysisResult.grade === 2
+                        ? 'bg-[#FFE4C7]/50 text-[#D97706] border-[#D97706]/20'
+                        : 'bg-[#FFD6E0]/50 text-[#DC2626] border-[#DC2626]/20'
+                    }`}>
+                      {analysisResult.grade === 0 ? '✓ No DR Detected' :
+                       analysisResult.grade === 1 ? '⚠ Mild DR' :
+                       analysisResult.grade === 2 ? '⚠ Moderate DR' :
+                       analysisResult.grade === 3 ? '🚨 Severe DR' :
+                       '🚨 Proliferative DR'}
                     </span>
                   </div>
                 )}
@@ -235,24 +276,70 @@ const Index = () => {
                     </h3>
                     
                     {/* Primary Result */}
-                    <div className="mb-6 p-6 rounded-xl bg-success/10 border-2 border-success/20">
+                    <div className={`mb-6 p-6 rounded-xl border-2 ${
+                      analysisResult.grade === 0 
+                        ? 'bg-success/10 border-success/20'
+                        : analysisResult.grade === 1
+                        ? 'bg-warning/10 border-warning/20'
+                        : analysisResult.grade === 2
+                        ? 'bg-[#FFE4C7]/50 border-[#D97706]/20'
+                        : 'bg-[#FFD6E0]/50 border-[#DC2626]/20'
+                    }`}>
                       <div className="flex items-center gap-4 mb-3">
-                        <CheckCircle className="w-10 h-10 text-success" />
+                        {analysisResult.grade === 0 ? (
+                          <CheckCircle className="w-10 h-10 text-success" />
+                        ) : (
+                          <AlertCircle className="w-10 h-10 text-warning" />
+                        )}
                         <div>
-                          <h4 className="text-lg font-bold text-success">
-                            NO DIABETIC RETINOPATHY DETECTED
+                          <h4 className={`text-lg font-bold ${
+                            analysisResult.grade === 0 
+                              ? 'text-success'
+                              : analysisResult.grade === 1
+                              ? 'text-warning'
+                              : analysisResult.grade === 2
+                              ? 'text-[#D97706]'
+                              : 'text-[#DC2626]'
+                          }`}>
+                            {analysisResult.gradeName?.toUpperCase() || 
+                             (analysisResult.grade === 0 ? "NO DIABETIC RETINOPATHY DETECTED" : 
+                              analysisResult.grade === 1 ? "MILD DIABETIC RETINOPATHY" :
+                              analysisResult.grade === 2 ? "MODERATE DIABETIC RETINOPATHY" :
+                              analysisResult.grade === 3 ? "SEVERE DIABETIC RETINOPATHY" :
+                              "PROLIFERATIVE DIABETIC RETINOPATHY")}
                           </h4>
-                          <p className="text-sm text-success/80">
+                          <p className={`text-sm ${
+                            analysisResult.grade === 0 
+                              ? 'text-success/80'
+                              : 'text-foreground/70'
+                          }`}>
                             {analysisResult.confidence}% confidence
                           </p>
                         </div>
                       </div>
+                      {analysisResult.reasoning && (
+                        <p className="text-sm mt-3 text-foreground/80">
+                          {analysisResult.reasoning}
+                        </p>
+                      )}
                     </div>
 
                     {/* Confidence Gauge */}
                     <div className="mb-6 text-center">
-                      <div className="w-32 h-32 mx-auto rounded-full bg-success/10 border-8 border-success/20 flex items-center justify-center mb-3">
-                        <span className="text-4xl font-bold text-success">
+                      <div className={`w-32 h-32 mx-auto rounded-full border-8 flex items-center justify-center mb-3 ${
+                        analysisResult.grade === 0
+                          ? 'bg-success/10 border-success/20'
+                          : analysisResult.grade === 1
+                          ? 'bg-warning/10 border-warning/20'
+                          : 'bg-[#FFD6E0]/50 border-[#DC2626]/20'
+                      }`}>
+                        <span className={`text-4xl font-bold ${
+                          analysisResult.grade === 0
+                            ? 'text-success'
+                            : analysisResult.grade === 1
+                            ? 'text-warning'
+                            : 'text-[#DC2626]'
+                        }`}>
                           {analysisResult.confidence}%
                         </span>
                       </div>
@@ -261,8 +348,22 @@ const Index = () => {
                       </p>
                     </div>
 
+                    {/* Features Detected */}
+                    {analysisResult.features && analysisResult.features.length > 0 && (
+                      <div className="mb-6 p-4 rounded-lg bg-secondary-bg border-l-4 border-warning">
+                        <h4 className="text-sm font-bold mb-2 text-warning">🔍 Key Findings Identified</h4>
+                        <ul className="space-y-1">
+                          {analysisResult.features.map((feature: string, idx: number) => (
+                            <li key={idx} className="text-sm text-foreground/80">
+                              • {feature}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
                     {/* Recommendation */}
-                    <div className="p-4 rounded-lg bg-secondary-bg border-l-4 border-primary">
+                    <div className="p-4 rounded-lg bg-secondary-bg border-l-4 border-primary mb-6">
                       <p className="text-sm font-semibold">
                         {analysisResult.recommendation}
                       </p>
@@ -271,9 +372,9 @@ const Index = () => {
                     {/* Model Info */}
                     <div className="mt-6 pt-6 border-t border-border/50">
                       <p className="text-xs text-muted-foreground font-mono">
-                        🤖 Model: EfficientNetB0 | Test Accuracy: 99.36%
+                        🤖 Model: Google Gemini 2.5 Pro (Vision-enabled AI)
                         <br />
-                        ⏱ Scan Time: 2.3s | Date: {analysisResult.timestamp}
+                        ⏱ Scan Time: {analysisResult.scanTime || '2.3s'} | Date: {analysisResult.timestamp}
                       </p>
                     </div>
 

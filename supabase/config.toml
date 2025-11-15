@@ -1,0 +1,4 @@
+project_id = "yojfptqjjkqlyvapdjgk"
+
+[functions.analyze-retinal-image]
+verify_jwt = false
