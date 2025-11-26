@@ -14,7 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      retinal_analyses: {
+        Row: {
+          confidence: number
+          created_at: string
+          features: string[] | null
+          grade: number
+          grade_name: string
+          id: string
+          image_url: string
+          reasoning: string | null
+          recommendation: string
+          scan_time: string | null
+        }
+        Insert: {
+          confidence: number
+          created_at?: string
+          features?: string[] | null
+          grade: number
+          grade_name: string
+          id?: string
+          image_url: string
+          reasoning?: string | null
+          recommendation: string
+          scan_time?: string | null
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          features?: string[] | null
+          grade?: number
+          grade_name?: string
+          id?: string
+          image_url?: string
+          reasoning?: string | null
+          recommendation?: string
+          scan_time?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
