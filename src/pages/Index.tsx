@@ -1,14 +1,18 @@
-import { useState, useCallback } from "react";
-import { Upload, Eye, Activity, AlertCircle, CheckCircle, Moon, Sun } from "lucide-react";
+import { useState, useCallback, useEffect } from "react";
+import { Upload, Eye, Activity, AlertCircle, CheckCircle, Moon, Sun, History, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<any>(null);
+  const [currentView, setCurrentView] = useState<"upload" | "history">("upload");
+  const [historyData, setHistoryData] = useState<any[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
   const { toast } = useToast();
 
   const toggleDarkMode = useCallback(() => {
@@ -74,6 +78,9 @@ const Index = () => {
       setIsAnalyzing(false);
       setAnalysisResult(result);
       
+      // Save to database
+      await saveToHistory(imageBase64, result);
+      
       const gradeMessages = [
         "No diabetic retinopathy detected.",
         "Mild diabetic retinopathy detected.",
@@ -109,6 +116,77 @@ const Index = () => {
     if (file) handleImageUpload(file);
   }, [handleImageUpload]);
 
+  const saveToHistory = async (imageBase64: string, result: any) => {
+    try {
+      const { error } = await supabase.from("retinal_analyses").insert({
+        image_url: imageBase64,
+        grade: result.grade,
+        grade_name: result.gradeName || `Grade ${result.grade}`,
+        confidence: result.confidence,
+        recommendation: result.recommendation,
+        features: result.features || [],
+        reasoning: result.reasoning,
+        scan_time: result.scanTime,
+      });
+
+      if (error) throw error;
+    } catch (error) {
+      console.error("Error saving to history:", error);
+    }
+  };
+
+  const loadHistory = async () => {
+    setLoadingHistory(true);
+    try {
+      const { data, error } = await supabase
+        .from("retinal_analyses")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setHistoryData(data || []);
+    } catch (error) {
+      console.error("Error loading history:", error);
+      toast({
+        title: "Failed to load history",
+        description: "Unable to retrieve past analyses.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  const deleteHistoryItem = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from("retinal_analyses")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+      
+      setHistoryData(prev => prev.filter(item => item.id !== id));
+      toast({
+        title: "Deleted",
+        description: "Analysis removed from history.",
+      });
+    } catch (error) {
+      console.error("Error deleting history item:", error);
+      toast({
+        title: "Failed to delete",
+        description: "Unable to remove analysis.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (currentView === "history") {
+      loadHistory();
+    }
+  }, [currentView]);
+
   return (
     <div className="min-h-screen">
       {/* Header */}
@@ -124,10 +202,24 @@ const Index = () => {
           </div>
           
           <nav className="hidden md:flex gap-6">
-            <button className="text-sm font-medium text-foreground border-b-2 border-primary pb-1">
+            <button 
+              onClick={() => setCurrentView("upload")}
+              className={`text-sm font-medium pb-1 transition-smooth ${
+                currentView === "upload"
+                  ? "text-foreground border-b-2 border-primary"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
               Upload
             </button>
-            <button className="text-sm font-medium text-muted-foreground hover:text-foreground transition-smooth">
+            <button 
+              onClick={() => setCurrentView("history")}
+              className={`text-sm font-medium pb-1 transition-smooth ${
+                currentView === "history"
+                  ? "text-foreground border-b-2 border-primary"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
               History
             </button>
           </nav>
@@ -183,10 +275,121 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Upload Section */}
+      {/* Main Content Section */}
       <section className="py-16 px-6">
         <div className="container mx-auto max-w-4xl">
-          {!selectedImage ? (
+          {currentView === "history" ? (
+            /* History View */
+            <div>
+              <div className="flex items-center gap-3 mb-8">
+                <History className="w-8 h-8 text-primary" />
+                <h2 className="text-3xl font-bold">Analysis History</h2>
+              </div>
+
+              {loadingHistory ? (
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 mx-auto mb-4 relative">
+                    <div className="absolute inset-0 rounded-full border-4 border-primary/30 animate-spin border-t-primary"></div>
+                  </div>
+                  <p className="text-muted-foreground">Loading history...</p>
+                </div>
+              ) : historyData.length === 0 ? (
+                <Card className="p-12 text-center bg-secondary-bg border-0 shadow-elegant">
+                  <History className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold mb-2">No History Yet</h3>
+                  <p className="text-muted-foreground mb-6">
+                    Upload and analyze your first fundus image to start building your history.
+                  </p>
+                  <Button
+                    onClick={() => setCurrentView("upload")}
+                    className="gradient-primary text-white"
+                  >
+                    Go to Upload
+                  </Button>
+                </Card>
+              ) : (
+                <div className="grid gap-6">
+                  {historyData.map((item) => (
+                    <Card key={item.id} className="p-6 bg-gradient-to-br from-secondary-bg to-tertiary-bg border-0 shadow-elegant hover:shadow-glow transition-smooth">
+                      <div className="flex gap-6">
+                        {/* Thumbnail */}
+                        <div className="relative w-32 h-32 flex-shrink-0">
+                          <img
+                            src={item.image_url}
+                            alt="Fundus"
+                            className="w-full h-full object-cover rounded-lg border-2 border-secondary"
+                          />
+                          <span className={`absolute top-2 left-2 px-2 py-1 rounded text-xs font-bold backdrop-blur-sm ${
+                            item.grade === 0
+                              ? 'bg-success/20 text-success'
+                              : item.grade === 1
+                              ? 'bg-warning/20 text-warning'
+                              : 'bg-[#FFD6E0]/50 text-[#DC2626]'
+                          }`}>
+                            Grade {item.grade}
+                          </span>
+                        </div>
+
+                        {/* Details */}
+                        <div className="flex-1">
+                          <div className="flex items-start justify-between mb-3">
+                            <div>
+                              <h3 className={`text-lg font-bold mb-1 ${
+                                item.grade === 0
+                                  ? 'text-success'
+                                  : item.grade === 1
+                                  ? 'text-warning'
+                                  : 'text-[#DC2626]'
+                              }`}>
+                                {item.grade_name}
+                              </h3>
+                              <p className="text-sm text-muted-foreground">
+                                {new Date(item.created_at).toLocaleString()}
+                              </p>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => deleteHistoryItem(item.id)}
+                              className="text-muted-foreground hover:text-destructive"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+
+                          <div className="mb-3">
+                            <span className="text-sm font-semibold">Confidence: </span>
+                            <span className={`text-sm font-bold ${
+                              item.grade === 0 ? 'text-success' : 'text-warning'
+                            }`}>
+                              {item.confidence}%
+                            </span>
+                          </div>
+
+                          {item.features && item.features.length > 0 && (
+                            <div className="mb-3">
+                              <p className="text-sm font-semibold mb-1">Key Findings:</p>
+                              <ul className="text-sm text-muted-foreground space-y-1">
+                                {item.features.map((feature: string, idx: number) => (
+                                  <li key={idx}>• {feature}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+
+                          <div className="p-3 rounded-lg bg-secondary-bg/50 border-l-4 border-primary">
+                            <p className="text-sm">{item.recommendation}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            /* Upload View */
+            !selectedImage ? (
             <div
               onDrop={handleDrop}
               onDragOver={(e) => e.preventDefault()}
@@ -391,6 +594,7 @@ const Index = () => {
                 ) : null}
               </div>
             </div>
+          )
           )}
         </div>
       </section>
