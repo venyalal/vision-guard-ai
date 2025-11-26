@@ -30,8 +30,9 @@ serve(async (req) => {
     }
 
     console.log('Analyzing retinal image with AI...');
+    const startTime = Date.now();
     
-    // Call Lovable AI with vision capabilities for DR detection
+    // Call Lovable AI with vision capabilities and structured output for reliable DR detection
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -43,41 +44,63 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `You are a medical AI expert specializing in diabetic retinopathy detection from fundus photographs. 
+            content: `You are an expert ophthalmologist AI specializing in diabetic retinopathy (DR) detection and grading from fundus photographs.
 
-CLASSIFICATION SYSTEM (5 grades):
-- Grade 0 (No DR): No abnormalities, healthy retina
-- Grade 1 (Mild NPDR): Microaneurysms only
-- Grade 2 (Moderate NPDR): More than just microaneurysms but less than severe NPDR (hemorrhages, hard exudates, cotton wool spots, venous beading in 1 quadrant)
-- Grade 3 (Severe NPDR): Any of the following - hemorrhages in all 4 quadrants, venous beading in 2+ quadrants, IRMA in 1+ quadrant
-- Grade 4 (Proliferative DR): Neovascularization, vitreous/preretinal hemorrhage, tractional retinal detachment
+CRITICAL CLASSIFICATION CRITERIA (International Clinical DR Scale):
 
-KEY FINDINGS TO IDENTIFY:
-• Microaneurysms (small red dots)
-• Hemorrhages (dot/blot or flame-shaped)
-• Hard exudates (yellow/white lipid deposits)
-• Cotton wool spots (white fluffy patches)
-• Venous beading (irregular vein dilation)
-• IRMA (intraretinal microvascular abnormalities)
-• Neovascularization (new abnormal vessels)
-• Macular edema
+Grade 0 (No DR):
+- Clear, healthy retina
+- No microaneurysms, hemorrhages, or other abnormalities
+- Normal optic disc, macula, and vessels
 
-You must return ONLY a valid JSON object with this exact structure:
-{
-  "grade": <number 0-4>,
-  "confidence": <number 0-100>,
-  "gradeName": "<string: No DR | Mild NPDR | Moderate NPDR | Severe NPDR | Proliferative DR>",
-  "recommendation": "<clinical recommendation>",
-  "features": ["<finding1>", "<finding2>", ...],
-  "reasoning": "<brief explanation of classification>"
-}`
+Grade 1 (Mild NPDR):
+- Microaneurysms ONLY (tiny red dots, <125 μm)
+- No other retinal abnormalities
+
+Grade 2 (Moderate NPDR):
+- More extensive findings than mild NPDR:
+  • Multiple microaneurysms
+  • Dot/blot hemorrhages
+  • Hard exudates (yellow lipid deposits)
+  • Cotton wool spots (soft exudates)
+  • Mild venous beading in <2 quadrants
+- Does NOT meet criteria for severe NPDR
+
+Grade 3 (Severe NPDR - "4-2-1 Rule"):
+ANY ONE of the following:
+  • Severe hemorrhages in all 4 quadrants
+  • Venous beading in 2+ quadrants
+  • IRMA (intraretinal microvascular abnormalities) in 1+ quadrant
+
+Grade 4 (Proliferative DR - PDR):
+ANY ONE of the following:
+  • Neovascularization of disc (NVD) or elsewhere (NVE)
+  • Vitreous hemorrhage or preretinal hemorrhage
+  • Fibrous proliferation
+  • Tractional retinal detachment
+
+ANALYSIS APPROACH:
+1. Systematically examine: optic disc → macula → vessels → periphery (4 quadrants)
+2. Count and grade lesions precisely
+3. Be conservative: if uncertain between grades, classify as lower grade
+4. For Grade 4, look for neovascularization (fine vessels on disc or retinal surface)`
           },
           {
             role: 'user',
             content: [
               {
                 type: 'text',
-                text: 'Analyze this fundus photograph for diabetic retinopathy. Classify it into one of the 5 grades (0-4) and identify specific lesions. Return only the JSON object, no additional text.'
+                text: `Analyze this fundus photograph for diabetic retinopathy. 
+
+STEP-BY-STEP:
+1. Examine image quality and field of view
+2. Systematically identify ALL lesions present
+3. Count and classify each lesion type
+4. Apply ICDR classification criteria strictly
+5. Determine final DR grade (0-4)
+6. Provide specific clinical recommendation based on grade
+
+Be precise and thorough in your analysis.`
               },
               {
                 type: 'image_url',
@@ -88,8 +111,57 @@ You must return ONLY a valid JSON object with this exact structure:
             ]
           }
         ],
-        temperature: 0.3,
-        max_tokens: 1000
+        tools: [
+          {
+            type: "function",
+            function: {
+              name: "classify_diabetic_retinopathy",
+              description: "Classify diabetic retinopathy severity and provide clinical analysis",
+              parameters: {
+                type: "object",
+                properties: {
+                  grade: {
+                    type: "integer",
+                    description: "DR severity grade (0=No DR, 1=Mild NPDR, 2=Moderate NPDR, 3=Severe NPDR, 4=Proliferative DR)",
+                    enum: [0, 1, 2, 3, 4]
+                  },
+                  confidence: {
+                    type: "integer",
+                    description: "Classification confidence percentage (0-100)",
+                    minimum: 0,
+                    maximum: 100
+                  },
+                  gradeName: {
+                    type: "string",
+                    description: "Human-readable grade name",
+                    enum: ["No DR", "Mild NPDR", "Moderate NPDR", "Severe NPDR", "Proliferative DR"]
+                  },
+                  recommendation: {
+                    type: "string",
+                    description: "Specific clinical recommendation based on grade (referral timeline, monitoring frequency)"
+                  },
+                  features: {
+                    type: "array",
+                    description: "List of specific DR lesions identified in the image",
+                    items: {
+                      type: "string"
+                    }
+                  },
+                  reasoning: {
+                    type: "string",
+                    description: "Detailed clinical reasoning for the classification, citing specific findings and their locations"
+                  }
+                },
+                required: ["grade", "confidence", "gradeName", "recommendation", "features", "reasoning"],
+                additionalProperties: false
+              }
+            }
+          }
+        ],
+        tool_choice: { 
+          type: "function", 
+          function: { name: "classify_diabetic_retinopathy" } 
+        }
       }),
     });
 
@@ -122,45 +194,54 @@ You must return ONLY a valid JSON object with this exact structure:
 
     let result;
     try {
-      const content = data.choices[0].message.content;
+      // Extract structured output from tool call
+      const toolCall = data.choices[0].message.tool_calls?.[0];
       
-      // Extract JSON from response (handle markdown code blocks)
-      let jsonStr = content;
-      if (content.includes('```json')) {
-        jsonStr = content.split('```json')[1].split('```')[0].trim();
-      } else if (content.includes('```')) {
-        jsonStr = content.split('```')[1].split('```')[0].trim();
+      if (!toolCall || toolCall.function.name !== 'classify_diabetic_retinopathy') {
+        throw new Error('No valid tool call in response');
       }
       
-      result = JSON.parse(jsonStr);
+      result = JSON.parse(toolCall.function.arguments);
       
       // Validate result structure
       if (typeof result.grade !== 'number' || result.grade < 0 || result.grade > 4) {
-        throw new Error('Invalid grade value');
+        throw new Error(`Invalid grade value: ${result.grade}`);
       }
       
-      // Add timestamp
+      if (!result.gradeName || !result.recommendation) {
+        throw new Error('Missing required fields in response');
+      }
+      
+      // Calculate actual scan time
+      const scanTime = ((Date.now() - startTime) / 1000).toFixed(1);
+      
+      // Add metadata
       result.timestamp = new Date().toLocaleString();
-      result.scanTime = `${(Math.random() * 2 + 1.5).toFixed(1)}s`;
+      result.scanTime = `${scanTime}s`;
+      
+      console.log('Analysis complete:', {
+        grade: result.grade,
+        confidence: result.confidence,
+        gradeName: result.gradeName,
+        featuresCount: result.features?.length || 0
+      });
       
     } catch (parseError) {
       console.error('Failed to parse AI response:', parseError);
-      console.error('Raw content:', data.choices[0].message.content);
+      console.error('Response data:', JSON.stringify(data, null, 2));
       
       // Fallback result if parsing fails
       result = {
         grade: 0,
-        confidence: 85,
-        gradeName: "Unable to classify",
-        recommendation: "⚠️ AI analysis incomplete. Please consult an ophthalmologist for proper diagnosis.",
+        confidence: 70,
+        gradeName: "Analysis Error",
+        recommendation: "⚠️ Unable to complete automated analysis. Please consult an ophthalmologist for professional diagnosis.",
         features: [],
-        reasoning: "Image analysis completed but classification uncertain. Manual review recommended.",
+        reasoning: "Technical error during image classification. Manual expert review required.",
         timestamp: new Date().toLocaleString(),
-        scanTime: "2.1s"
+        scanTime: `${((Date.now() - startTime) / 1000).toFixed(1)}s`
       };
     }
-
-    console.log('Analysis complete:', result);
 
     return new Response(
       JSON.stringify(result),
