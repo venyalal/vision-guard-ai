@@ -145,7 +145,12 @@ const Index = () => {
   }, [handleImageUpload]);
 
   const saveToHistory = async (imageBase64: string, result: any) => {
-    if (!user) return;
+    if (!user) {
+      console.log('No user authenticated, skipping history save');
+      return;
+    }
+    
+    console.log('Saving analysis to history for user:', user.id);
     
     try {
       const { error } = await supabase.from("retinal_analyses").insert({
@@ -160,27 +165,54 @@ const Index = () => {
         scan_time: result.scanTime,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error saving to history:', error);
+        throw error;
+      }
+      
+      console.log('Analysis saved successfully');
+      
+      // Reload history if we're on the history view
+      if (currentView === "history") {
+        loadHistory();
+      }
     } catch (error) {
       console.error("Error saving to history:", error);
+      toast({
+        title: "Save Failed",
+        description: "Analysis completed but couldn't save to history.",
+        variant: "destructive",
+      });
     }
   };
 
   const loadHistory = async () => {
+    if (!user) {
+      console.log('No user authenticated, skipping history load');
+      return;
+    }
+    
     setLoadingHistory(true);
+    console.log('Loading history for user:', user.id);
+    
     try {
       const { data, error } = await supabase
         .from("retinal_analyses")
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('History load error:', error);
+        throw error;
+      }
+      
+      console.log('History loaded:', data?.length || 0, 'records');
       setHistoryData(data || []);
     } catch (error) {
       console.error("Error loading history:", error);
       toast({
         title: "Failed to load history",
-        description: "Unable to retrieve past analyses.",
+        description: error instanceof Error ? error.message : "Unable to retrieve past analyses.",
         variant: "destructive",
       });
     } finally {
@@ -213,10 +245,10 @@ const Index = () => {
   };
 
   useEffect(() => {
-    if (currentView === "history") {
+    if (currentView === "history" && user) {
       loadHistory();
     }
-  }, [currentView]);
+  }, [currentView, user]);
 
   return (
     <div className="min-h-screen">
