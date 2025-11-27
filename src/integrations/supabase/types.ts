@@ -26,6 +26,7 @@ export type Database = {
           reasoning: string | null
           recommendation: string
           scan_time: string | null
+          user_id: string
         }
         Insert: {
           confidence: number
@@ -38,6 +39,7 @@ export type Database = {
           reasoning?: string | null
           recommendation: string
           scan_time?: string | null
+          user_id: string
         }
         Update: {
           confidence?: number
@@ -50,6 +52,7 @@ export type Database = {
           reasoning?: string | null
           recommendation?: string
           scan_time?: string | null
+          user_id?: string
         }
         Relationships: []
       }
