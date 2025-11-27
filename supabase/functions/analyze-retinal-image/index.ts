@@ -40,67 +40,62 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-pro',
+        model: 'google/gemini-2.5-flash',
         messages: [
-          {
-            role: 'system',
-            content: `You are an expert ophthalmologist AI specializing in diabetic retinopathy (DR) detection and grading from fundus photographs.
-
-CRITICAL CLASSIFICATION CRITERIA (International Clinical DR Scale):
-
-Grade 0 (No DR):
-- Clear, healthy retina
-- No microaneurysms, hemorrhages, or other abnormalities
-- Normal optic disc, macula, and vessels
-
-Grade 1 (Mild NPDR):
-- Microaneurysms ONLY (tiny red dots, <125 μm)
-- No other retinal abnormalities
-
-Grade 2 (Moderate NPDR):
-- More extensive findings than mild NPDR:
-  • Multiple microaneurysms
-  • Dot/blot hemorrhages
-  • Hard exudates (yellow lipid deposits)
-  • Cotton wool spots (soft exudates)
-  • Mild venous beading in <2 quadrants
-- Does NOT meet criteria for severe NPDR
-
-Grade 3 (Severe NPDR - "4-2-1 Rule"):
-ANY ONE of the following:
-  • Severe hemorrhages in all 4 quadrants
-  • Venous beading in 2+ quadrants
-  • IRMA (intraretinal microvascular abnormalities) in 1+ quadrant
-
-Grade 4 (Proliferative DR - PDR):
-ANY ONE of the following:
-  • Neovascularization of disc (NVD) or elsewhere (NVE)
-  • Vitreous hemorrhage or preretinal hemorrhage
-  • Fibrous proliferation
-  • Tractional retinal detachment
-
-ANALYSIS APPROACH:
-1. Systematically examine: optic disc → macula → vessels → periphery (4 quadrants)
-2. Count and grade lesions precisely
-3. Be conservative: if uncertain between grades, classify as lower grade
-4. For Grade 4, look for neovascularization (fine vessels on disc or retinal surface)`
-          },
           {
             role: 'user',
             content: [
               {
                 type: 'text',
-                text: `Analyze this fundus photograph for diabetic retinopathy. 
+                text: `You are an expert ophthalmologist AI specializing in diabetic retinopathy (DR) detection and grading from fundus photographs.
 
-STEP-BY-STEP:
-1. Examine image quality and field of view
-2. Systematically identify ALL lesions present
-3. Count and classify each lesion type
-4. Apply ICDR classification criteria strictly
-5. Determine final DR grade (0-4)
-6. Provide specific clinical recommendation based on grade
+Analyze this retinal fundus image using the International Clinical Diabetic Retinopathy (ICDR) Disease Severity Scale:
 
-Be precise and thorough in your analysis.`
+**Grade 0 (No DR):**
+- Clear, healthy retina
+- No microaneurysms, hemorrhages, or lesions
+- Normal optic disc, macula, and blood vessels
+- Recommendation: Annual screening
+
+**Grade 1 (Mild NPDR):**
+- Microaneurysms ONLY (small red dots)
+- No other abnormalities
+- Recommendation: 6-12 month follow-up
+
+**Grade 2 (Moderate NPDR):**
+- Multiple microaneurysms
+- Retinal hemorrhages (dot/blot)
+- Hard exudates (yellow deposits)
+- Cotton wool spots
+- Mild venous beading
+- Recommendation: 3-6 month follow-up, consider ophthalmology referral
+
+**Grade 3 (Severe NPDR - 4-2-1 Rule):**
+ANY of:
+- Severe hemorrhages in all 4 quadrants
+- Venous beading in 2+ quadrants
+- IRMA in 1+ quadrant
+- Recommendation: Urgent referral within 1 month, risk of progression to PDR
+
+**Grade 4 (Proliferative DR):**
+ANY of:
+- Neovascularization (new abnormal blood vessels)
+- Vitreous/preretinal hemorrhage
+- Fibrous proliferation
+- Tractional retinal detachment
+- Recommendation: IMMEDIATE ophthalmology referral (within 1 week), high risk of vision loss
+
+**Analysis Instructions:**
+1. Examine image systematically: optic disc → macula → blood vessels → 4 retinal quadrants
+2. Identify ALL visible lesions with precise locations
+3. Count microaneurysms, hemorrhages, exudates
+4. Check for neovascularization (fine new vessels)
+5. Assign grade based on worst finding
+6. Provide confidence (0-100%) and detailed reasoning
+7. List specific features found
+8. Give appropriate clinical recommendation
+
+Provide your analysis using the classify_diabetic_retinopathy function with accurate findings.`
               },
               {
                 type: 'image_url',
@@ -116,44 +111,37 @@ Be precise and thorough in your analysis.`
             type: "function",
             function: {
               name: "classify_diabetic_retinopathy",
-              description: "Classify diabetic retinopathy severity and provide clinical analysis",
+              description: "Classify diabetic retinopathy severity grade from 0-4 with clinical details",
               parameters: {
                 type: "object",
                 properties: {
                   grade: {
-                    type: "integer",
-                    description: "DR severity grade (0=No DR, 1=Mild NPDR, 2=Moderate NPDR, 3=Severe NPDR, 4=Proliferative DR)",
-                    enum: [0, 1, 2, 3, 4]
+                    type: "number",
+                    description: "DR grade: 0=No DR, 1=Mild NPDR, 2=Moderate NPDR, 3=Severe NPDR, 4=Proliferative DR"
                   },
                   confidence: {
-                    type: "integer",
-                    description: "Classification confidence percentage (0-100)",
-                    minimum: 0,
-                    maximum: 100
+                    type: "number",
+                    description: "Confidence percentage 0-100"
                   },
                   gradeName: {
                     type: "string",
-                    description: "Human-readable grade name",
-                    enum: ["No DR", "Mild NPDR", "Moderate NPDR", "Severe NPDR", "Proliferative DR"]
+                    description: "Grade name: No DR, Mild NPDR, Moderate NPDR, Severe NPDR, or Proliferative DR"
                   },
                   recommendation: {
                     type: "string",
-                    description: "Specific clinical recommendation based on grade (referral timeline, monitoring frequency)"
+                    description: "Clinical recommendation with timeline"
                   },
                   features: {
                     type: "array",
-                    description: "List of specific DR lesions identified in the image",
-                    items: {
-                      type: "string"
-                    }
+                    description: "List of specific lesions and findings",
+                    items: { type: "string" }
                   },
                   reasoning: {
                     type: "string",
-                    description: "Detailed clinical reasoning for the classification, citing specific findings and their locations"
+                    description: "Detailed analysis with locations of findings"
                   }
                 },
-                required: ["grade", "confidence", "gradeName", "recommendation", "features", "reasoning"],
-                additionalProperties: false
+                required: ["grade", "confidence", "gradeName", "recommendation", "features", "reasoning"]
               }
             }
           }
