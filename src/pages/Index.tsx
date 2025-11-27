@@ -1,11 +1,14 @@
 import { useState, useCallback, useEffect } from "react";
-import { Upload, Eye, Activity, AlertCircle, CheckCircle, Moon, Sun, History, Trash2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Upload, Eye, Activity, AlertCircle, CheckCircle, Moon, Sun, History, Trash2, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import type { User } from "@supabase/supabase-js";
 
 const Index = () => {
+  const [user, setUser] = useState<User | null>(null);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -13,7 +16,32 @@ const Index = () => {
   const [currentView, setCurrentView] = useState<"upload" | "history">("upload");
   const [historyData, setHistoryData] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const navigate = useNavigate();
   const { toast } = useToast();
+
+  useEffect(() => {
+    // Check authentication
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        navigate("/auth");
+        return;
+      }
+      setUser(session.user);
+    };
+
+    checkAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!session) {
+        navigate("/auth");
+      } else {
+        setUser(session.user);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
 
   const toggleDarkMode = useCallback(() => {
     setIsDarkMode((prev) => {
@@ -117,8 +145,11 @@ const Index = () => {
   }, [handleImageUpload]);
 
   const saveToHistory = async (imageBase64: string, result: any) => {
+    if (!user) return;
+    
     try {
       const { error } = await supabase.from("retinal_analyses").insert({
+        user_id: user.id,
         image_url: imageBase64,
         grade: result.grade,
         grade_name: result.gradeName || `Grade ${result.grade}`,
@@ -224,17 +255,27 @@ const Index = () => {
             </button>
           </nav>
           
-          <button
-            onClick={toggleDarkMode}
-            className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center hover:shadow-glow transition-smooth"
-            aria-label="Toggle dark mode"
-          >
-            {isDarkMode ? (
-              <Sun className="w-5 h-5 text-primary" />
-            ) : (
-              <Moon className="w-5 h-5 text-primary" />
-            )}
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={toggleDarkMode}
+              className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center hover:shadow-glow transition-smooth"
+              aria-label="Toggle dark mode"
+            >
+              {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            </button>
+            <Button
+              onClick={async () => {
+                await supabase.auth.signOut();
+                navigate("/auth");
+              }}
+              variant="outline"
+              size="sm"
+              className="gap-2"
+            >
+              <LogOut className="w-4 h-4" />
+              Logout
+            </Button>
+          </div>
         </div>
       </header>
 
