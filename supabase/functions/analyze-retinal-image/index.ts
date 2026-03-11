@@ -20,9 +20,9 @@ serve(async (req) => {
       );
     }
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      console.error('LOVABLE_API_KEY not configured');
+    const RetinalAI_API_KEY = Deno.env.get('RetinalAI_API_KEY');
+    if (!RetinalAI_API_KEY) {
+      console.error('RetinalAI_API_KEY not configured');
       return new Response(
         JSON.stringify({ error: 'AI service not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -32,11 +32,11 @@ serve(async (req) => {
     console.log('Analyzing retinal image with AI...');
     const startTime = Date.now();
     
-    // Call Lovable AI with vision capabilities and structured output for reliable DR detection
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    // Call RetinalAI AI with vision capabilities and structured output for reliable DR detection
+    const response = await fetch('https://ai.gateway.RetinalAI.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Authorization': `Bearer ${RetinalAI_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -155,7 +155,7 @@ Provide your analysis using the classify_diabetic_retinopathy function with accu
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Lovable AI error:', response.status, errorText);
+      console.error('RetinalAI AI error:', response.status, errorText);
       
       if (response.status === 429) {
         return new Response(

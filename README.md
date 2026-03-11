@@ -1,73 +1,46 @@
-# Welcome to your Lovable project
+👁️ RetinalAI | Diabetic Retinopathy (DR) Screening Hub
+Lead Engineer: Venya Lal (2024A7PS0318U)
 
-## Project info
+Because diagnosing Diabetic Retinopathy shouldn't feel like using a Windows 95 printer.
 
-**URL**: https://lovable.dev/projects/aa6174d0-8abb-4bfa-b42e-0029c4eed3cf
+🔬 The Mission: Fight DR (And Bad UI)
+Diabetic Retinopathy is a serious, sight-threatening condition. RetinalAI is a serious, high-performance diagnostic tool. The only thing not serious here is the amount of sleep I got while building it.
 
-## How can I edit this code?
+I engineered this hub because clinicians shouldn't have to squint at a cluttered screen to find a microaneurysm. RetinalAI gives you a surgical-grade interface so clean, even your medical textbooks would be jealous.
 
-There are several ways of editing your application.
+⚡ The "Big Brain" Tech Stack
+React 18 + Vite: I picked Vite because in a screening clinic, "Loading..." is basically a swear word. This UI moves faster than a caffeine-fueled student on finals week.
 
-**Use Lovable**
+Surgical UI (Tailwind): 1px borders. High-contrast dark mode. Zero fluff. It’s so sleek, it makes other medical software look like a chaotic junk drawer.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/aa6174d0-8abb-4bfa-b42e-0029c4eed3cf) and start prompting.
+Supabase: Handling patient data and DR progression history with the kind of security that keeps the hackers crying in their basements.
 
-Changes made via Lovable will be committed automatically to this repo.
+🧬 Features That Actually Matter
+DR Detection Flow: Optimized for retinal fundus scans. It identifies vascular abnormalities while you're still finishing your first sip of coffee.
 
-**Use your preferred IDE**
+Bento-Grid Architecture: Organized data. No overlapping windows. No "Where did that tab go?"—just pure, unadulterated clinical focus.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+Simulated Telemetry: A "Scanning" animation so smooth, you’ll forget it’s code and start believing there’s a tiny doctor living inside your GPU.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+🛠️ The Lab Setup
+Bash
 
-Follow these steps:
+# Step 1: Admit you need a better UI
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+# Step 2: Clone this vision
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+git clone [https://github.com/your-username/vision-guard-ai-1.git](https://github.com/your-username/vision-guard-ai-1.git)
 
-# Step 3: Install the necessary dependencies.
-npm i
+# Step 3: Fuel up on snacks and install
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+npm install
+
+# Step 4: Witness the future of DR screening
+
 npm run dev
-```
 
-**Edit a file directly in GitHub**
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+👑 The Credits
+Engineered with precision, passion, and probably too much Maggi by Venya Lal.
 
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/aa6174d0-8abb-4bfa-b42e-0029c4eed3cf) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Copyright (c) 2026 Venya Lal. Note: This software is designed to catch DR, not to be a substitute for your actual ophthalmologist. Please don't sue me; I'm just a student with a dream and a student ID.
