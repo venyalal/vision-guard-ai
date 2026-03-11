@@ -37,6 +37,8 @@
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 0%;
 
+    --teal: 187 100% 50%;
+
     --border: 215 20% 22%;
     --input: 215 20% 18%;
     --ring: 211 100% 50%;
@@ -65,28 +67,44 @@
     font-family: 'JetBrains Mono', monospace;
   }
 
-  .border-grid {
-    border: 1px solid hsl(215 20% 22%);
-  }
-
   .surface-card {
     background: hsl(215 25% 11%);
-    border: 1px solid hsl(215 20% 22%);
+    border: 0.5px solid hsl(215 20% 22%);
     border-radius: 8px;
     backdrop-filter: blur(12px);
+    box-shadow: inset 0 0 0 0.5px hsla(215 20% 30% / 0.15), 0 1px 3px hsla(0 0% 0% / 0.3);
   }
 
   .surface-elevated {
     background: hsl(215 22% 15%);
-    border: 1px solid hsl(215 20% 22%);
+    border: 0.5px solid hsl(215 20% 22%);
     border-radius: 8px;
     backdrop-filter: blur(12px);
+    box-shadow: inset 0 0 0 0.5px hsla(215 20% 30% / 0.15);
+  }
+
+  .text-teal {
+    color: hsl(187 100% 50%);
+  }
+
+  .border-teal {
+    border-color: hsl(187 100% 50%);
+  }
+
+  .bg-teal {
+    background-color: hsl(187 100% 50%);
   }
 
   @keyframes laser-sweep {
     0% { top: 0%; }
-    50% { top: 100%; }
+    50% { top: 95%; }
     100% { top: 0%; }
+  }
+
+  @keyframes laser-sweep-slow {
+    0% { top: 2%; }
+    50% { top: 92%; }
+    100% { top: 2%; }
   }
 
   @keyframes pulse-glow {
@@ -99,13 +117,30 @@
     50% { opacity: 0; }
   }
 
-  @keyframes scroll-up {
-    0% { transform: translateY(0); opacity: 1; }
-    100% { transform: translateY(-24px); opacity: 0; }
+  @keyframes region-flash {
+    0%, 100% { opacity: 0; }
+    30%, 70% { opacity: 1; }
+  }
+
+  @keyframes waveform {
+    0% { d: path("M0,20 Q5,5 10,20 T20,20 T30,20 T40,20 T50,20 T60,20 T70,20 T80,20 T90,20 T100,20"); }
+    25% { d: path("M0,20 Q5,8 10,15 T20,25 T30,12 T40,22 T50,18 T60,8 T70,24 T80,14 T90,20 T100,20"); }
+    50% { d: path("M0,20 Q5,12 10,28 T20,10 T30,22 T40,15 T50,28 T60,12 T70,20 T80,25 T90,15 T100,20"); }
+    75% { d: path("M0,20 Q5,18 10,10 T20,24 T30,18 T40,8 T50,22 T60,28 T70,15 T80,20 T90,25 T100,20"); }
+    100% { d: path("M0,20 Q5,5 10,20 T20,20 T30,20 T40,20 T50,20 T60,20 T70,20 T80,20 T90,20 T100,20"); }
+  }
+
+  @keyframes reticle-rotate {
+    from { transform: translate(-50%, -50%) rotate(0deg); }
+    to { transform: translate(-50%, -50%) rotate(360deg); }
   }
 
   .animate-laser {
     animation: laser-sweep 2.5s ease-in-out infinite;
+  }
+
+  .animate-laser-slow {
+    animation: laser-sweep-slow 4s ease-in-out infinite;
   }
 
   .animate-pulse-glow {
@@ -116,7 +151,11 @@
     animation: terminal-blink 1s step-end infinite;
   }
 
-  .animate-scroll-up {
-    animation: scroll-up 0.5s ease-out forwards;
+  .animate-region-flash {
+    animation: region-flash 1.2s ease-in-out infinite;
+  }
+
+  .animate-reticle {
+    animation: reticle-rotate 30s linear infinite;
   }
 }
