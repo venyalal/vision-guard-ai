@@ -4,29 +4,34 @@
 
 @layer base {
   :root {
-    --background: 216 28% 7%;
-    --foreground: 210 20% 90%;
+    /* High-density clinical white workstation theme */
+    /* Surgical off-white background: #F8FAFC */
+    --background: 210 40% 98%;
+    /* Dark, neutral clinical foreground */
+    --foreground: 222 15% 16%;
 
-    --surface: 215 25% 11%;
-    --surface-elevated: 215 22% 15%;
+    /* Pure white work surfaces and cards */
+    --surface: 0 0% 100%;
+    --surface-elevated: 0 0% 100%;
 
-    --card: 215 25% 11%;
-    --card-foreground: 210 20% 90%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 15% 16%;
 
-    --popover: 215 25% 11%;
-    --popover-foreground: 210 20% 90%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 15% 16%;
 
+    /* Clinical blue primary accent */
     --primary: 211 100% 50%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 215 22% 15%;
-    --secondary-foreground: 210 20% 90%;
+    --secondary: 0 0% 100%;
+    --secondary-foreground: 222 15% 16%;
 
-    --muted: 215 20% 18%;
-    --muted-foreground: 215 15% 55%;
+    --muted: 214 32% 91%;
+    --muted-foreground: 215 15% 40%;
 
-    --accent: 215 22% 15%;
-    --accent-foreground: 210 20% 90%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222 15% 16%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
@@ -37,10 +42,12 @@
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 0%;
 
+    /* Surgical teal for retinal targeting elements */
     --teal: 187 100% 50%;
 
-    --border: 215 20% 22%;
-    --input: 215 20% 18%;
+    /* 0.5px clinical grid lines (#E2E8F0 approx) */
+    --border: 210 40% 90%;
+    --input: 214 32% 91%;
     --ring: 211 100% 50%;
 
     --radius: 0.5rem;
@@ -50,6 +57,7 @@
 @layer base {
   * {
     @apply border-border;
+    border-width: 0.5px;
   }
 
   body {
@@ -68,19 +76,18 @@
   }
 
   .surface-card {
-    background: hsl(215 25% 11%);
-    border: 0.5px solid hsl(215 20% 22%);
+    /* Pure white clinical work card with 0.5px border */
+    background: #ffffff;
+    border: 0.5px solid #E2E8F0;
     border-radius: 8px;
-    backdrop-filter: blur(12px);
-    box-shadow: inset 0 0 0 0.5px hsla(215 20% 30% / 0.15), 0 1px 3px hsla(0 0% 0% / 0.3);
+    box-shadow: none;
   }
 
   .surface-elevated {
-    background: hsl(215 22% 15%);
-    border: 0.5px solid hsl(215 20% 22%);
+    background: #ffffff;
+    border: 0.5px solid #E2E8F0;
     border-radius: 8px;
-    backdrop-filter: blur(12px);
-    box-shadow: inset 0 0 0 0.5px hsla(215 20% 30% / 0.15);
+    box-shadow: none;
   }
 
   .text-teal {

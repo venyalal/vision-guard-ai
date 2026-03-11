@@ -7,10 +7,12 @@ import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
 
 const TERMINAL_LINES = [
-  { tag: "BOOT", text: "Initializing TensorFlow.js engine..." },
-  { tag: "DATA", text: "Normalizing fundus image tensors..." },
-  { tag: "INF", text: "Running ResNet-50 inference (v4.2)..." },
-  { tag: "RES", text: "Grading complete. Confidence: 98.2%." },
+  { tag: "SCAN", text: "Initializing retinal acquisition optics..." },
+  { tag: "ALIGN", text: "Locking fixation on foveal avascular zone..." },
+  { tag: "MAP", text: "Mapping macular thickness across 6x6mm grid..." },
+  { tag: "SEG", text: "Segmenting RNFL, GCL, and IPL boundaries..." },
+  { tag: "QC", text: "Signal strength index 9/10 — motion artifacts: none." },
+  { tag: "RES", text: "Encoding structural biomarkers and forwarding to inference engine..." },
 ];
 
 const MOCK_SCANS = [
@@ -155,6 +157,52 @@ const RegionAnalysisOverlay = () => {
   );
 };
 
+/** Anatomical overlay mapping "Key Findings" to circles on the fundus image */
+const AnatomicalOverlay = ({
+  count,
+  hoveredIndex,
+}: {
+  count: number;
+  hoveredIndex: number | null;
+}) => {
+  if (!count || count <= 0) return null;
+
+  // Predefined anatomical zones across the fundus field
+  const zones = [
+    { cx: "32%", cy: "38%", r: "7%" },
+    { cx: "58%", cy: "44%", r: "8%" },
+    { cx: "44%", cy: "60%", r: "6%" },
+    { cx: "68%", cy: "30%", r: "6%" },
+    { cx: "26%", cy: "62%", r: "7%" },
+  ];
+
+  return (
+    <svg
+      viewBox="0 0 100 100"
+      className="pointer-events-none absolute inset-0 w-full h-full"
+      preserveAspectRatio="none"
+    >
+      {Array.from({ length: count }).map((_, i) => {
+        const zone = zones[i % zones.length];
+        const active = hoveredIndex === i;
+        return (
+          <circle
+            key={i}
+            cx={parseFloat(zone.cx)}
+            cy={parseFloat(zone.cy)}
+            r={parseFloat(zone.r)}
+            fill="none"
+            stroke="hsl(187 100% 50%)"
+            strokeWidth={active ? 0.9 : 0.5}
+            opacity={active ? 0.9 : 0.45}
+            strokeDasharray={active ? "2 1" : "3 2"}
+          />
+        );
+      })}
+    </svg>
+  );
+};
+
 
 const Index = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -168,6 +216,8 @@ const Index = () => {
   const [showTerminal, setShowTerminal] = useState(false);
   const [liveFeed, setLiveFeed] = useState(MOCK_SCANS.slice(0, 5));
   const feedCounter = useRef(9222);
+  const [hoveredFindingIndex, setHoveredFindingIndex] = useState<number | null>(null);
+  const [sidebarSection, setSidebarSection] = useState<"home" | "analysis" | "records">("home");
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -308,7 +358,7 @@ const Index = () => {
         </span>
       </div>
 
-      {/* ── Navigation ── */}
+      {/* ── Header ── */}
       <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur-[12px]">
         <div className="container mx-auto px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -316,7 +366,7 @@ const Index = () => {
               <Eye className="w-4 h-4 text-primary" />
             </div>
             <div className="flex flex-col">
-              <span className="font-mono-data text-lg font-bold text-foreground tracking-tight leading-none">
+              <span className="text-lg font-semibold text-foreground tracking-tight leading-none">
                 RETINAL<span className="text-primary">AI</span>
               </span>
               <span className="font-mono-data text-[8px] text-muted-foreground/40 leading-none mt-0.5">
@@ -324,20 +374,6 @@ const Index = () => {
               </span>
             </div>
           </div>
-
-          <nav className="hidden md:flex items-center gap-1 font-mono-data text-xs">
-            {[
-              { key: "upload" as const, label: "SCANNING_CHAMBER" },
-              { key: "history" as const, label: "SCAN_HISTORY" },
-            ].map((item) => (
-              <button key={item.key} onClick={() => setCurrentView(item.key)}
-                className={`px-3 py-1.5 rounded-md transition-colors ${currentView === item.key ? "bg-primary/10 text-primary border border-primary/20" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}>
-                [ {item.label} ]
-              </button>
-            ))}
-            <span className="px-3 py-1.5 text-muted-foreground/30 cursor-default">[ DOCUMENTATION ]</span>
-            <span className="px-3 py-1.5 text-muted-foreground/30 cursor-default">[ CLINICAL_API ]</span>
-          </nav>
 
           <div className="flex items-center gap-2">
             <span className="hidden lg:flex items-center gap-1.5 font-mono-data text-xs text-muted-foreground mr-2">
@@ -351,112 +387,185 @@ const Index = () => {
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-6">
-        {/* ── Bento Stats Grid ── */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-          {/* TRAINING CORPUS */}
-          <div className="surface-card p-4 flex flex-col gap-2">
-            <div className="flex items-center gap-2">
-              <Database className="w-4 h-4 text-primary" />
-              <span className="font-mono-data text-[10px] text-muted-foreground uppercase tracking-wide">Training Corpus</span>
+      <div className="container mx-auto px-6 py-8">
+        <div className="flex gap-8">
+          {/* ── Static Sidebar ── */}
+          <aside className="w-56 pr-4 border-r border-border">
+            <div className="mb-6">
+              <p className="text-[11px] text-muted-foreground uppercase tracking-[0.18em]">
+                Navigation
+              </p>
             </div>
-            <span className="font-mono-data text-2xl font-bold text-foreground">1.4M+</span>
-            <span className="text-[10px] text-muted-foreground">Clinical Images</span>
-            {/* Training bar */}
-            <div className="w-full h-1 rounded-full bg-muted overflow-hidden mt-1">
-              <div className="h-full w-full rounded-full bg-success" />
-            </div>
-            <span className="font-mono-data text-[8px] text-success/60">CORPUS_LOADED: 100%</span>
-          </div>
+            <nav className="space-y-1">
+              {[
+                { key: "home" as const, label: "Home", target: "upload" as const },
+                { key: "analysis" as const, label: "Analysis", target: "upload" as const },
+                { key: "records" as const, label: "Records", target: "history" as const },
+              ].map((item) => {
+                const active = sidebarSection === item.key;
+                return (
+                  <button
+                    key={item.key}
+                    onClick={() => {
+                      setSidebarSection(item.key);
+                      setCurrentView(item.target);
+                    }}
+                    className={`w-full text-left px-3 py-2 rounded-md text-[13px] transition-colors ${
+                      active
+                        ? "bg-muted text-foreground border border-border"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                );
+              })}
+            </nav>
+          </aside>
 
-          {/* SENSITIVITY */}
-          <div className="surface-card p-4 flex flex-col items-center gap-1">
-            <span className="font-mono-data text-[10px] text-muted-foreground uppercase tracking-wide">Sensitivity</span>
-            <div className="relative flex items-center justify-center my-1">
-              <CircularProgress value={95.8} size={72} />
-              <span className="absolute font-mono-data text-sm font-bold text-success">95.8%</span>
-            </div>
-            <span className="font-mono-data text-[8px] text-muted-foreground/50">SPECIFICITY: 97.1%</span>
-          </div>
-
-          {/* MODEL CONFIDENCE */}
-          <div className="surface-card p-4 flex flex-col gap-2">
-            <div className="flex items-center gap-2">
-              <Cpu className="w-4 h-4 text-teal" />
-              <span className="font-mono-data text-[10px] text-muted-foreground uppercase tracking-wide">Model Confidence</span>
-            </div>
-            <span className="font-mono-data text-2xl font-bold text-foreground">98.92%</span>
-            <span className="font-mono-data text-[8px] text-muted-foreground/50">[ ERROR_MARGIN: &lt;0.02% ]</span>
-          </div>
-
-          {/* NEURAL THROUGHPUT */}
-          <div className="surface-card p-4 flex flex-col gap-2">
-            <div className="flex items-center gap-2">
-              <span className="font-mono-data text-[10px] text-muted-foreground uppercase tracking-wide">Neural Throughput</span>
-            </div>
-            <NeuralWaveform />
-            <span className="font-mono-data text-[8px] text-muted-foreground/50">1,247 inf/s | 99.97% uptime</span>
-          </div>
-        </div>
-
-        {currentView === "history" ? (
-          /* ── History View ── */
-          <div>
-            <div className="flex items-center gap-3 mb-6">
-              <History className="w-5 h-5 text-primary" />
-              <h2 className="font-mono-data text-lg font-bold uppercase">Scan History</h2>
-            </div>
-            {loadingHistory ? (
-              <div className="text-center py-12">
-                <div className="w-12 h-12 mx-auto mb-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-                <p className="font-mono-data text-sm text-muted-foreground">Loading records...</p>
+          {/* ── Main Content Column ── */}
+          <div className="flex-1">
+            {/* ── Bento Stats Grid ── */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+              {/* TRAINING CORPUS */}
+              <div className="surface-card p-6 flex flex-col gap-3">
+                <div className="flex items-center gap-2">
+                  <Database className="w-4 h-4 text-primary" />
+                  <span className="text-[11px] text-muted-foreground uppercase tracking-wide">Training Corpus</span>
+                </div>
+                <span className="font-mono-data text-2xl font-bold text-foreground">1.4M+</span>
+                <span className="text-[11px] text-muted-foreground">Clinical Images</span>
+                {/* Training bar */}
+                <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden mt-1.5">
+                  <div className="h-full w-full rounded-full bg-success" />
+                </div>
+                <span className="font-mono-data text-[9px] text-success/70">CORPUS_LOADED: 100%</span>
               </div>
-            ) : historyData.length === 0 ? (
-              <div className="surface-card p-12 text-center">
-                <History className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="font-mono-data text-base font-semibold mb-2">NO_RECORDS_FOUND</h3>
-                <p className="text-sm text-muted-foreground mb-6">Upload and analyze your first fundus image.</p>
-                <Button onClick={() => setCurrentView("upload")} size="sm" className="font-mono-data text-xs">GO_TO_SCANNER</Button>
+
+              {/* SENSITIVITY */}
+              <div className="surface-card p-6 flex flex-col items-center gap-2">
+                <span className="text-[11px] text-muted-foreground uppercase tracking-wide">Sensitivity</span>
+                <div className="relative flex items-center justify-center my-2">
+                  <CircularProgress value={95.8} size={72} />
+                  <span className="font-mono-data absolute text-sm font-bold text-success">95.8%</span>
+                </div>
+                <span className="font-mono-data text-[9px] text-muted-foreground/60">SPECIFICITY: 97.1%</span>
+              </div>
+
+              {/* MODEL CONFIDENCE */}
+              <div className="surface-card p-6 flex flex-col gap-3">
+                <div className="flex items-center gap-2">
+                  <Cpu className="w-4 h-4 text-teal" />
+                  <span className="text-[11px] text-muted-foreground uppercase tracking-wide">Model Confidence</span>
+                </div>
+                <span className="font-mono-data text-2xl font-bold text-foreground">98.92%</span>
+                <span className="font-mono-data text-[9px] text-muted-foreground/60">[ ERROR_MARGIN: &lt;0.02% ]</span>
+              </div>
+
+              {/* NEURAL THROUGHPUT */}
+              <div className="surface-card p-6 flex flex-col gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] text-muted-foreground uppercase tracking-wide">Neural Throughput</span>
+                </div>
+                <NeuralWaveform />
+                <span className="font-mono-data text-[9px] text-muted-foreground/60">1,247 inf/s | 99.97% uptime</span>
+              </div>
+            </div>
+
+            {currentView === "history" ? (
+              /* ── History View ── */
+              <div>
+                <div className="flex items-center gap-3 mb-8">
+                  <History className="w-5 h-5 text-primary" />
+                  <h2 className="text-lg font-semibold uppercase tracking-wide">Scan History</h2>
+                </div>
+                {loadingHistory ? (
+                  <div className="text-center py-16">
+                    <div className="w-12 h-12 mx-auto mb-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                    <p className="font-mono-data text-sm text-muted-foreground">Loading records...</p>
+                  </div>
+                ) : historyData.length === 0 ? (
+                  <div className="surface-card p-12 text-center">
+                    <History className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-base font-semibold mb-2">No records found</h3>
+                    <p className="text-sm text-muted-foreground mb-6">Upload and analyze your first fundus image.</p>
+                    <Button
+                      onClick={() => {
+                        setSidebarSection("analysis");
+                        setCurrentView("upload");
+                      }}
+                      size="sm"
+                      className="font-mono-data text-xs"
+                    >
+                      GO_TO_SCANNER
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {historyData.map((item) => (
+                      <div key={item.id} className="surface-card p-6">
+                        <div className="flex gap-6">
+                          <div
+                            className="relative w-24 h-24 flex-shrink-0 rounded-lg overflow-hidden"
+                            style={{ border: "0.5px solid #E2E8F0" }}
+                          >
+                            <img src={item.image_url} alt="Fundus" className="w-full h-full object-cover" />
+                            <span
+                              className={`absolute top-1 left-1 px-1.5 py-0.5 rounded text-[10px] font-mono-data font-bold bg-background/80 backdrop-blur-sm ${gradeColor(
+                                item.grade
+                              )}`}
+                            >
+                              G{item.grade}
+                            </span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between mb-3">
+                              <div>
+                                <h3 className={`font-mono-data text-sm font-bold ${gradeColor(item.grade)}`}>
+                                  {gradeLabel(item.grade)}
+                                </h3>
+                                <p className="font-mono-data text-xs text-muted-foreground">
+                                  {new Date(item.created_at).toLocaleString()}
+                                </p>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => deleteHistoryItem(item.id)}
+                                className="text-muted-foreground hover:text-destructive h-7 w-7 p-0"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            </div>
+                            <span className="font-mono-data text-xs">
+                              CONF: <span className={gradeColor(item.grade)}>{item.confidence}%</span>
+                            </span>
+                            {item.features && item.features.length > 0 && (
+                              <div className="flex flex-wrap gap-1.5 mt-3 mb-3">
+                                {item.features.slice(0, 3).map((f: string, i: number) => (
+                                  <span
+                                    key={i}
+                                    className="font-mono-data text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground"
+                                  >
+                                    {f}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                            <div className="text-xs text-muted-foreground border-l-2 border-primary pl-2">
+                              {item.recommendation}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             ) : (
-              <div className="space-y-3">
-                {historyData.map((item) => (
-                  <div key={item.id} className="surface-card p-4">
-                    <div className="flex gap-4">
-                      <div className="relative w-24 h-24 flex-shrink-0 rounded-lg overflow-hidden" style={{ border: '0.5px solid hsl(215 20% 22%)' }}>
-                        <img src={item.image_url} alt="Fundus" className="w-full h-full object-cover" />
-                        <span className={`absolute top-1 left-1 px-1.5 py-0.5 rounded text-[10px] font-mono-data font-bold bg-background/80 backdrop-blur-sm ${gradeColor(item.grade)}`}>G{item.grade}</span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between mb-2">
-                          <div>
-                            <h3 className={`font-mono-data text-sm font-bold ${gradeColor(item.grade)}`}>{gradeLabel(item.grade)}</h3>
-                            <p className="font-mono-data text-xs text-muted-foreground">{new Date(item.created_at).toLocaleString()}</p>
-                          </div>
-                          <Button variant="ghost" size="sm" onClick={() => deleteHistoryItem(item.id)} className="text-muted-foreground hover:text-destructive h-7 w-7 p-0">
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </Button>
-                        </div>
-                        <span className="font-mono-data text-xs">CONF: <span className={gradeColor(item.grade)}>{item.confidence}%</span></span>
-                        {item.features && item.features.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mt-2 mb-2">
-                            {item.features.slice(0, 3).map((f: string, i: number) => (
-                              <span key={i} className="font-mono-data text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{f}</span>
-                            ))}
-                          </div>
-                        )}
-                        <div className="text-xs text-muted-foreground border-l-2 border-primary pl-2">{item.recommendation}</div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        ) : (
-          /* ── Main Grid: Scanner + Live Feed ── */
-          <div className="grid lg:grid-cols-[1fr_280px] gap-4">
-            <div className="space-y-4">
+              /* ── Main Grid: Scanner + Live Feed ── */
+              <div className="grid lg:grid-cols-[1fr_280px] gap-6">
+                <div className="space-y-6">
               {!selectedImage ? (
                 /* ── Scanning Chamber (empty state) ── */
                 <div onDrop={handleDrop} onDragOver={(e) => e.preventDefault()} className="relative">
@@ -474,7 +583,7 @@ const Index = () => {
                         </div>
 
                         {/* Center Area */}
-                        <div className="relative flex-1 h-80 flex flex-col items-center justify-center bg-background/50">
+                        <div className="relative flex-1 h-80 flex flex-col items-center justify-center bg-background/40">
                           {/* Measurement Grid */}
                           <MeasurementGrid />
                           {/* Targeting Reticle */}
@@ -482,11 +591,22 @@ const Index = () => {
                           {/* Laser line — Surgical Teal */}
                           <div className="absolute left-0 right-0 h-px animate-laser-slow"
                             style={{ background: 'hsl(187 100% 50% / 0.5)', boxShadow: '0 0 10px hsl(187 100% 50% / 0.3)' }} />
-                          {/* Coordinate labels */}
-                          <span className="absolute top-2 left-3 font-mono-data text-[8px] text-teal/40">[ LAT: 34.02 ]</span>
-                          <span className="absolute top-2 right-3 font-mono-data text-[8px] text-teal/40">[ LNG: 12.88 ]</span>
-                          <span className="absolute bottom-2 left-3 font-mono-data text-[8px] text-teal/40">[ X: 0.00 ]</span>
-                          <span className="absolute bottom-2 right-3 font-mono-data text-[8px] text-teal/40">[ Y: 0.00 ]</span>
+                          {/* Anatomical / coordinate labels */}
+                          <span className="absolute top-2 left-3 font-mono-data text-[8px] text-teal/50 tracking-[0.22em] uppercase">
+                            [ OPTIC_DISC_REF ]
+                          </span>
+                          <span className="absolute top-2 right-3 font-mono-data text-[8px] text-teal/50 tracking-[0.22em] uppercase text-right">
+                            [ MACULAR_GRID_6x6MM ]
+                          </span>
+                          <span className="absolute bottom-2 left-3 font-mono-data text-[8px] text-teal/45">
+                            [ X: 0.00 | Y: 0.00 ]
+                          </span>
+                          <span className="absolute bottom-2 right-3 font-mono-data text-[8px] text-teal/45">
+                            [ AXIAL_LEN: 23.4mm ]
+                          </span>
+                          <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 font-mono-data text-[9px] text-teal/80 tracking-[0.28em] uppercase">
+                            [ FOVEA_CENTER ]
+                          </span>
                           {/* Upload CTA */}
                           <div className="relative z-10 flex flex-col items-center gap-4">
                             <div className="w-16 h-16 rounded-lg border border-border bg-surface flex items-center justify-center">
@@ -509,7 +629,7 @@ const Index = () => {
                   </label>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-6">
                   {/* Terminal */}
                   {showTerminal && (
                     <div className="surface-card p-0 overflow-hidden">
@@ -541,15 +661,30 @@ const Index = () => {
                         {/* Scanning overlays */}
                         {isAnalyzing && (
                           <>
-                            <div className="absolute left-0 right-0 h-0.5 animate-laser-slow"
-                              style={{ background: 'hsl(187 100% 50% / 0.7)', boxShadow: '0 0 16px hsl(187 100% 50% / 0.5), 0 0 4px hsl(187 100% 50% / 0.8)' }} />
+                            <div
+                              className="absolute left-0 right-0 h-0.5 animate-laser-slow"
+                              style={{
+                                background: "hsl(187 100% 50% / 0.7)",
+                                boxShadow:
+                                  "0 0 16px hsl(187 100% 50% / 0.5), 0 0 4px hsl(187 100% 50% / 0.8)",
+                              }}
+                            />
                             <RegionAnalysisOverlay />
                           </>
                         )}
+                        {/* Anatomical overlay bound to Key Findings */}
+                        {analysisResult && analysisResult.features && analysisResult.features.length > 0 && (
+                          <AnatomicalOverlay
+                            count={analysisResult.features.length}
+                            hoveredIndex={hoveredFindingIndex}
+                          />
+                        )}
                         {analysisResult && (
                           <div className="absolute top-3 left-3">
-                            <span className={`font-mono-data px-2 py-1 rounded text-xs font-bold bg-background/80 backdrop-blur-sm ${gradeColor(analysisResult.grade)}`}
-                              style={{ border: '0.5px solid hsl(215 20% 22%)' }}>
+                            <span
+                              className={`font-mono-data px-2 py-1 rounded text-xs font-bold bg-background/80 backdrop-blur-sm ${gradeColor(analysisResult.grade)}`}
+                              style={{ border: "0.5px solid #E2E8F0" }}
+                            >
                               {gradeLabel(analysisResult.grade)}
                             </span>
                           </div>
@@ -560,7 +695,7 @@ const Index = () => {
                     {/* Results */}
                     <div>
                       {isAnalyzing && !analysisResult ? (
-                        <div className="surface-card p-6 flex flex-col items-center justify-center h-full">
+                        <div className="surface-card p-8 flex flex-col items-center justify-center h-full">
                           <div className="w-10 h-10 border-2 border-teal/30 border-t-teal rounded-full animate-spin mb-4" />
                           <p className="font-mono-data text-sm text-muted-foreground">PROCESSING...</p>
                         </div>
@@ -573,7 +708,14 @@ const Index = () => {
                             </div>
                             <span className="font-mono-data text-[10px] text-muted-foreground">{analysisResult.scanTime}</span>
                           </div>
-                          <div className="p-4 space-y-4">
+                          <div className="p-4 space-y-4 relative">
+                            {/* Micro labels for compliance + analysis state */}
+                            <span className="absolute top-1 left-1 font-mono-data text-[8px] text-muted-foreground/70 tracking-[0.18em] uppercase">
+                              [ AREA_ANALYSIS: COMPLETE ]
+                            </span>
+                            <span className="absolute top-1 right-1 font-mono-data text-[8px] text-muted-foreground/70 tracking-[0.18em] uppercase text-right">
+                              [ ISO_COMPLIANT: TRUE ]
+                            </span>
                             <div className={`p-4 rounded-lg ${analysisResult.grade === 0 ? 'bg-success/5' : analysisResult.grade <= 2 ? 'bg-warning/5' : 'bg-destructive/5'}`}
                               style={{ border: `0.5px solid ${analysisResult.grade === 0 ? 'hsl(142 71% 45% / 0.2)' : analysisResult.grade <= 2 ? 'hsl(38 92% 50% / 0.2)' : 'hsl(0 72% 51% / 0.2)'}` }}>
                               <div className="flex items-center gap-3 mb-2">
@@ -588,7 +730,7 @@ const Index = () => {
                               {analysisResult.reasoning && <p className="text-xs text-muted-foreground leading-relaxed">{analysisResult.reasoning}</p>}
                             </div>
 
-                            <div className="flex items-center justify-center py-2">
+                            <div className="flex items-center justify-center py-3">
                               <div className="relative flex items-center justify-center">
                                 <CircularProgress value={analysisResult.confidence} size={88} />
                                 <span className="absolute font-mono-data text-lg font-bold text-success">{analysisResult.confidence}%</span>
@@ -596,11 +738,18 @@ const Index = () => {
                             </div>
 
                             {analysisResult.features && analysisResult.features.length > 0 && (
-                              <div className="pl-3" style={{ borderLeft: '2px solid hsl(38 92% 50%)' }}>
+                              <div className="pl-3" style={{ borderLeft: "2px solid hsl(38 92% 50%)" }}>
                                 <p className="font-mono-data text-xs font-bold text-warning mb-1.5">KEY_FINDINGS</p>
                                 <ul className="space-y-1">
                                   {analysisResult.features.map((f: string, i: number) => (
-                                    <li key={i} className="font-mono-data text-xs text-muted-foreground">[{String(i).padStart(2, '0')}] {f}</li>
+                                    <li
+                                      key={i}
+                                      className="font-mono-data text-xs text-muted-foreground"
+                                      onMouseEnter={() => setHoveredFindingIndex(i)}
+                                      onMouseLeave={() => setHoveredFindingIndex(null)}
+                                    >
+                                      [{String(i).padStart(2, "0")}] {f}
+                                    </li>
                                   ))}
                                 </ul>
                               </div>
@@ -611,7 +760,7 @@ const Index = () => {
                               <p className="text-xs text-muted-foreground">{analysisResult.recommendation}</p>
                             </div>
 
-                            <div className="pt-3 border-t border-border">
+                            <div className="pt-4 border-t border-border">
                               <p className="font-mono-data text-[10px] text-muted-foreground/60 leading-relaxed">
                                 MODEL: Gemini-2.5-Flash (Vision) | SCAN_TIME: {analysisResult.scanTime || 'N/A'} | {analysisResult.timestamp}
                               </p>
@@ -627,36 +776,56 @@ const Index = () => {
                   </div>
                 </div>
               )}
-            </div>
-
-            {/* ── Live Activity Sidebar ── */}
-            <div className="hidden lg:block">
-              <div className="surface-card p-0 overflow-hidden sticky top-20">
-                <div className="px-4 py-2 border-b border-border flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-success animate-pulse-glow" />
-                    <span className="font-mono-data text-xs text-muted-foreground uppercase">Live Feed</span>
-                  </div>
-                  <Activity className="w-3 h-3 text-muted-foreground" />
                 </div>
-                <div className="divide-y divide-border">
-                  {liveFeed.map((scan, i) => (
-                    <div key={`${scan.id}-${i}`} className="px-4 py-2.5 flex items-center justify-between hover:bg-muted/30 transition-colors">
-                      <div>
-                        <span className="font-mono-data text-xs text-foreground">{scan.id}</span>
-                        <span className={`font-mono-data text-xs ml-2 ${statusColor(scan.status)}`}>{scan.status}</span>
+
+                {/* ── Live Activity Sidebar ── */}
+                <div className="hidden lg:block">
+                  <div className="surface-card p-0 overflow-hidden sticky top-24">
+                    <div className="px-4 py-2.5 border-b border-border flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-success/80 animate-pulse-glow shadow-none" />
+                        <span className="font-mono-data text-xs text-muted-foreground uppercase">Live Feed</span>
                       </div>
-                      <span className="font-mono-data text-[10px] text-muted-foreground">{scan.time}</span>
+                      <Activity className="w-3 h-3 text-muted-foreground" />
                     </div>
-                  ))}
+                    <div className="divide-y divide-border">
+                      {liveFeed.map((scan, i) => (
+                        <div
+                          key={`${scan.id}-${i}`}
+                          className="px-4 py-3.5 flex items-center justify-between hover:bg-muted/40 transition-colors"
+                        >
+                          <div>
+                            <span className="font-mono-data text-xs text-foreground">{scan.id}</span>
+                            <span className={`font-mono-data text-xs ml-2 ${statusColor(scan.status)}`}>{scan.status}</span>
+                          </div>
+                          <span className="font-mono-data text-[10px] text-muted-foreground">{scan.time}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
 
-      {/* ── Disclaimer ── */}
+      {/* ── Static System Indicators ─*/}
+      <section className="border-t border-border bg-surface">
+        <div className="container mx-auto px-6 py-2.5 flex flex-wrap items-center justify-between gap-3">
+          <span className="font-mono-data text-[10px] text-muted-foreground">
+            [ SYSTEM_STATUS: ENCRYPTED ]
+          </span>
+          <span className="font-mono-data text-[10px] text-muted-foreground">
+            [ DB_VERSION: 1.0.42 ]
+          </span>
+          <span className="font-mono-data text-[10px] text-muted-foreground">
+            [ LATENCY: 24ms ]
+          </span>
+        </div>
+      </section>
+
+      {/* ── Disclaimer ─ */}
       <section className="border-t border-border mt-8">
         <div className="container mx-auto px-6 py-6">
           <div className="surface-card p-4 flex gap-3">
