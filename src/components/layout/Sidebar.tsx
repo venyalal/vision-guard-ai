@@ -28,31 +28,29 @@ export default function Sidebar({ user }: SidebarProps) {
   };
 
   return (
-    <aside className="fixed top-0 left-0 h-screen w-[240px] bg-[#111827] border-r border-[#1F2937] flex flex-col z-40">
+    <aside className="fixed top-0 left-0 h-screen w-[240px] bg-[#0A0E1A] border-r border-[#1F2937] flex flex-col z-40">
       {/* Logo */}
-      <div className="px-5 py-5 border-b border-[#1F2937]">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded bg-[#0EA5E9]/10 border border-[#0EA5E9]/20 flex items-center justify-center">
-            <Eye className="w-4 h-4 text-[#0EA5E9]" />
-          </div>
+      <div className="px-5 py-4 border-b border-[#1F2937]">
+        <div className="flex items-center gap-2">
+          <Eye className="w-4 h-4 text-[#0EA5E9]" />
           <div>
-            <p className="text-sm font-semibold text-[#F9FAFB] tracking-tight">VisionGuard</p>
-            <p className="text-[10px] text-[#6B7280] uppercase tracking-widest">AI</p>
+            <p className="text-xs font-medium text-[#D1D5DB] tracking-wide">VisionGuard AI</p>
+            <p className="text-[10px] text-[#4B5563] uppercase tracking-widest">DR Screening</p>
           </div>
         </div>
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-3 py-4 space-y-0.5">
+      <nav className="flex-1 px-2 py-3 space-y-px">
         {NAV.map(({ to, icon: Icon, label }) => (
           <NavLink
             key={to}
             to={to}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded text-sm transition-colors ${
+              `flex items-center gap-3 px-3 py-2 text-sm transition-colors relative ${
                 isActive
-                  ? "bg-[#0EA5E9]/10 text-[#0EA5E9] border border-[#0EA5E9]/20"
-                  : "text-[#6B7280] hover:text-[#F9FAFB] hover:bg-[#1F2937]"
+                  ? "text-[#F9FAFB] before:absolute before:left-0 before:top-1 before:bottom-1 before:w-[2px] before:bg-[#0EA5E9] before:rounded-r"
+                  : "text-[#6B7280] hover:text-[#D1D5DB]"
               }`
             }
           >

@@ -14,25 +14,31 @@ function StatCard({
   sub,
   icon: Icon,
   loading,
+  accentColor = "#6B7280",
 }: {
   label: string;
   value: string | number;
   sub?: string;
   icon: React.ElementType;
   loading: boolean;
+  accentColor?: string;
 }) {
   return (
-    <div className="bg-[#111827] border border-[#1F2937] rounded-lg p-4">
-      <div className="flex items-start justify-between mb-3">
-        <p className="text-xs text-[#6B7280] uppercase tracking-wider">{label}</p>
-        <Icon className="w-4 h-4 text-[#6B7280]" />
+    <div
+      className="bg-[#111827] border border-[#1F2937] rounded-lg px-4 pt-3 pb-0 overflow-hidden"
+      style={{ borderBottom: `1px solid ${accentColor}22` }}
+    >
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-[11px] text-[#6B7280] uppercase tracking-wider">{label}</p>
+        <Icon className="w-3.5 h-3.5 text-[#374151]" />
       </div>
       {loading ? (
-        <Skeleton className="h-7 w-16 bg-[#1F2937]" />
+        <Skeleton className="h-6 w-14 bg-[#1F2937] mb-3" />
       ) : (
-        <p className="text-2xl font-semibold font-mono text-[#F9FAFB]">{value}</p>
+        <p className="text-xl font-mono font-medium text-[#F9FAFB] mb-0.5">{value}</p>
       )}
-      {sub && <p className="text-[11px] text-[#6B7280] mt-1">{sub}</p>}
+      {sub && <p className="text-[11px] text-[#4B5563] pb-3">{sub}</p>}
+      <div className="h-px mt-2" style={{ backgroundColor: `${accentColor}33` }} />
     </div>
   );
 }
@@ -72,31 +78,35 @@ export default function Dashboard() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <StatCard
             label="Scans today"
             value={today.length}
             icon={ScanLine}
             loading={isLoading}
+            accentColor="#0EA5E9"
           />
           <StatCard
             label="Total scans"
             value={scans.length}
             icon={Activity}
             loading={isLoading}
+            accentColor="#6B7280"
           />
           <StatCard
             label="Referral rate"
             value={`${referralRate}%`}
-            sub="Grade ≥ 1"
+            sub="grade ≥ 1"
             icon={TrendingUp}
             loading={isLoading}
+            accentColor="#F59E0B"
           />
           <StatCard
             label="Avg confidence"
             value={`${avgConfidence}%`}
             icon={Activity}
             loading={isLoading}
+            accentColor="#10B981"
           />
         </div>
 
@@ -121,11 +131,11 @@ export default function Dashboard() {
                 ))}
               </div>
             ) : recent.length === 0 ? (
-              <div className="p-8 text-center">
-                <p className="text-sm text-[#6B7280]">No scans yet</p>
+              <div className="px-4 py-6 text-center">
+                <p className="text-xs text-[#4B5563]">No scans yet</p>
                 <button
                   onClick={() => navigate("/analyze")}
-                  className="mt-3 text-xs text-[#0EA5E9] hover:underline"
+                  className="mt-1.5 text-[11px] text-[#6B7280] hover:text-[#9CA3AF] transition-colors"
                 >
                   Run first analysis →
                 </button>
@@ -184,17 +194,19 @@ export default function Dashboard() {
           {/* Quick upload */}
           <div className="bg-[#111827] border border-[#1F2937] rounded-lg p-4 flex flex-col">
             <h2 className="text-sm font-medium text-[#F9FAFB] mb-3">Quick analyze</h2>
-            <div className="flex-1 flex flex-col items-center justify-center">
+            <div className="flex-1">
               <button
                 onClick={() => navigate("/analyze")}
-                className="w-full group border-2 border-dashed border-[#1F2937] hover:border-[#0EA5E9]/50 rounded-lg p-8 flex flex-col items-center gap-3 transition-colors"
+                className="w-full group border border-dashed border-[#1F2937] hover:border-[#374151] rounded transition-colors"
               >
-                <div className="w-12 h-12 rounded-lg bg-[#0EA5E9]/10 border border-[#0EA5E9]/20 flex items-center justify-center group-hover:bg-[#0EA5E9]/20 transition-colors">
-                  <Upload className="w-5 h-5 text-[#0EA5E9]" />
-                </div>
-                <div className="text-center">
-                  <p className="text-sm font-medium text-[#F9FAFB]">Upload fundus image</p>
-                  <p className="text-xs text-[#6B7280] mt-1">JPG, PNG, TIFF</p>
+                <div className="flex items-center gap-3 px-4 py-4">
+                  <Upload className="w-4 h-4 text-[#4B5563] group-hover:text-[#6B7280] transition-colors flex-shrink-0" />
+                  <div className="text-left">
+                    <p className="text-sm text-[#9CA3AF] group-hover:text-[#D1D5DB] transition-colors">
+                      Drop fundus image or click to analyze
+                    </p>
+                    <p className="text-[11px] text-[#4B5563] mt-0.5">JPG · PNG · TIFF · max 20 MB</p>
+                  </div>
                 </div>
               </button>
             </div>
