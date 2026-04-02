@@ -4,165 +4,151 @@
 
 @layer base {
   :root {
-    /* High-density clinical white workstation theme */
-    /* Surgical off-white background: #F8FAFC */
-    --background: 210 40% 98%;
-    /* Dark, neutral clinical foreground */
-    --foreground: 222 15% 16%;
+    --background: 222 47% 8%;
+    --foreground: 210 40% 98%;
 
-    /* Pure white work surfaces and cards */
-    --surface: 0 0% 100%;
-    --surface-elevated: 0 0% 100%;
+    --card: 222 47% 9%;
+    --card-foreground: 210 40% 98%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222 15% 16%;
+    --popover: 222 47% 9%;
+    --popover-foreground: 210 40% 98%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 15% 16%;
+    --primary: 199 89% 48%;
+    --primary-foreground: 222 47% 8%;
 
-    /* Clinical blue primary accent */
-    --primary: 211 100% 50%;
-    --primary-foreground: 0 0% 100%;
+    --secondary: 222 47% 14%;
+    --secondary-foreground: 210 40% 98%;
 
-    --secondary: 0 0% 100%;
-    --secondary-foreground: 222 15% 16%;
+    --muted: 215 28% 17%;
+    --muted-foreground: 215 16% 47%;
 
-    --muted: 214 32% 91%;
-    --muted-foreground: 215 15% 40%;
-
-    --accent: 210 40% 96%;
-    --accent-foreground: 222 15% 16%;
+    --accent: 222 47% 14%;
+    --accent-foreground: 210 40% 98%;
 
     --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive-foreground: 210 40% 98%;
 
-    --success: 142 71% 45%;
-    --success-foreground: 0 0% 100%;
-
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 0%;
-
-    /* Surgical teal for retinal targeting elements */
-    --teal: 187 100% 50%;
-
-    /* 0.5px clinical grid lines (#E2E8F0 approx) */
-    --border: 210 40% 90%;
-    --input: 214 32% 91%;
-    --ring: 211 100% 50%;
+    --border: 215 28% 17%;
+    --input: 215 28% 17%;
+    --ring: 199 89% 48%;
 
     --radius: 0.5rem;
+
+    /* Clinical grade colors */
+    --grade-0: 160 84% 39%;
+    --grade-1: 48 96% 53%;
+    --grade-2: 38 92% 50%;
+    --grade-3: 25 95% 53%;
+    --grade-4: 0 84% 60%;
   }
 }
 
 @layer base {
   * {
     @apply border-border;
-    border-width: 0.5px;
   }
 
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply bg-[#0A0E1A] text-[#F9FAFB];
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-feature-settings: 'cv11', 'ss01', 'cv01';
+    -webkit-font-smoothing: antialiased;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-semibold tracking-tight;
+    @apply font-semibold;
+    letter-spacing: -0.02em;
+  }
+
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #111827;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #374151;
+    border-radius: 2px;
   }
 }
 
-@layer utilities {
-  .font-mono-data {
-    font-family: 'JetBrains Mono', monospace;
-  }
+/* Retinal scan grid animation — CSS only */
+.scan-container {
+  position: relative;
+  overflow: hidden;
+  background-color: #060910;
+  background-image:
+    linear-gradient(rgba(14, 165, 233, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(14, 165, 233, 0.08) 1px, transparent 1px);
+  background-size: 24px 24px;
+  animation: grid-breathe 3s ease-in-out infinite;
+}
 
-  .surface-card {
-    /* Pure white clinical work card with 0.5px border */
-    background: #ffffff;
-    border: 0.5px solid #E2E8F0;
-    border-radius: 8px;
-    box-shadow: none;
-  }
+.scan-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent 0%, #0EA5E9 30%, #38bdf8 50%, #0EA5E9 70%, transparent 100%);
+  box-shadow: 0 0 12px 2px rgba(14, 165, 233, 0.4);
+  animation: scan-sweep 2.4s linear infinite;
+}
 
-  .surface-elevated {
-    background: #ffffff;
-    border: 0.5px solid #E2E8F0;
-    border-radius: 8px;
-    box-shadow: none;
-  }
+.scan-crosshair {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 64px;
+  height: 64px;
+  animation: crosshair-pulse 2.4s ease-in-out infinite;
+}
 
-  .text-teal {
-    color: hsl(187 100% 50%);
-  }
+.scan-crosshair::before,
+.scan-crosshair::after {
+  content: '';
+  position: absolute;
+  background: #0EA5E9;
+  opacity: 0.6;
+}
 
-  .border-teal {
-    border-color: hsl(187 100% 50%);
-  }
+.scan-crosshair::before {
+  width: 1px;
+  height: 100%;
+  left: 50%;
+}
 
-  .bg-teal {
-    background-color: hsl(187 100% 50%);
-  }
+.scan-crosshair::after {
+  width: 100%;
+  height: 1px;
+  top: 50%;
+}
 
-  @keyframes laser-sweep {
-    0% { top: 0%; }
-    50% { top: 95%; }
-    100% { top: 0%; }
-  }
+@keyframes scan-sweep {
+  0% { top: -2px; opacity: 0; }
+  5% { opacity: 1; }
+  95% { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
 
-  @keyframes laser-sweep-slow {
-    0% { top: 2%; }
-    50% { top: 92%; }
-    100% { top: 2%; }
-  }
+@keyframes grid-breathe {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
 
-  @keyframes pulse-glow {
-    0%, 100% { opacity: 0.4; }
-    50% { opacity: 1; }
-  }
+@keyframes crosshair-pulse {
+  0%, 100% { opacity: 0.3; transform: translate(-50%, -50%) scale(0.9); }
+  50% { opacity: 0.8; transform: translate(-50%, -50%) scale(1.1); }
+}
 
-  @keyframes terminal-blink {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0; }
-  }
+/* Confidence bar fill animation */
+@keyframes bar-fill {
+  from { width: 0%; }
+}
 
-  @keyframes region-flash {
-    0%, 100% { opacity: 0; }
-    30%, 70% { opacity: 1; }
-  }
-
-  @keyframes waveform {
-    0% { d: path("M0,20 Q5,5 10,20 T20,20 T30,20 T40,20 T50,20 T60,20 T70,20 T80,20 T90,20 T100,20"); }
-    25% { d: path("M0,20 Q5,8 10,15 T20,25 T30,12 T40,22 T50,18 T60,8 T70,24 T80,14 T90,20 T100,20"); }
-    50% { d: path("M0,20 Q5,12 10,28 T20,10 T30,22 T40,15 T50,28 T60,12 T70,20 T80,25 T90,15 T100,20"); }
-    75% { d: path("M0,20 Q5,18 10,10 T20,24 T30,18 T40,8 T50,22 T60,28 T70,15 T80,20 T90,25 T100,20"); }
-    100% { d: path("M0,20 Q5,5 10,20 T20,20 T30,20 T40,20 T50,20 T60,20 T70,20 T80,20 T90,20 T100,20"); }
-  }
-
-  @keyframes reticle-rotate {
-    from { transform: translate(-50%, -50%) rotate(0deg); }
-    to { transform: translate(-50%, -50%) rotate(360deg); }
-  }
-
-  .animate-laser {
-    animation: laser-sweep 2.5s ease-in-out infinite;
-  }
-
-  .animate-laser-slow {
-    animation: laser-sweep-slow 4s ease-in-out infinite;
-  }
-
-  .animate-pulse-glow {
-    animation: pulse-glow 2s ease-in-out infinite;
-  }
-
-  .animate-terminal-blink {
-    animation: terminal-blink 1s step-end infinite;
-  }
-
-  .animate-region-flash {
-    animation: region-flash 1.2s ease-in-out infinite;
-  }
-
-  .animate-reticle {
-    animation: reticle-rotate 30s linear infinite;
-  }
+.confidence-fill {
+  animation: bar-fill 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }

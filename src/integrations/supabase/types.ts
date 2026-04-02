@@ -23,6 +23,7 @@ export type Database = {
           grade_name: string
           id: string
           image_url: string
+          patient_id: string | null
           reasoning: string | null
           recommendation: string
           scan_time: string | null
@@ -36,6 +37,7 @@ export type Database = {
           grade_name: string
           id?: string
           image_url: string
+          patient_id?: string | null
           reasoning?: string | null
           recommendation: string
           scan_time?: string | null
@@ -49,6 +51,7 @@ export type Database = {
           grade_name?: string
           id?: string
           image_url?: string
+          patient_id?: string | null
           reasoning?: string | null
           recommendation?: string
           scan_time?: string | null
