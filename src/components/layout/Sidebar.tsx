@@ -6,9 +6,9 @@ import type { User } from "@supabase/supabase-js";
 
 const NAV = [
   { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-  { to: "/analyze", icon: ScanLine, label: "Analyze" },
-  { to: "/history", icon: Clock, label: "History" },
-  { to: "/about", icon: Info, label: "About" },
+  { to: "/analyze",   icon: ScanLine,        label: "Analyze"   },
+  { to: "/history",   icon: Clock,           label: "History"   },
+  { to: "/about",     icon: Info,            label: "About"     },
 ];
 
 interface SidebarProps {
@@ -28,14 +28,14 @@ export default function Sidebar({ user }: SidebarProps) {
   };
 
   return (
-    <aside className="fixed top-0 left-0 h-screen w-[240px] bg-[#0A0E1A] border-r border-[#1F2937] flex flex-col z-40">
+    <aside className="fixed top-0 left-0 h-screen w-[240px] bg-[#F8FAFC] border-r border-[#E2E8F0] flex flex-col z-40">
       {/* Logo */}
-      <div className="px-5 py-4 border-b border-[#1F2937]">
+      <div className="px-5 py-4 border-b border-[#E2E8F0]">
         <div className="flex items-center gap-2">
-          <Eye className="w-4 h-4 text-[#0EA5E9]" />
+          <Eye className="w-4 h-4 text-[#2563EB]" />
           <div>
-            <p className="text-xs font-medium text-[#D1D5DB] tracking-wide">VisionGuard AI</p>
-            <p className="text-[10px] text-[#4B5563] uppercase tracking-widest">DR Screening</p>
+            <p className="text-xs font-semibold text-[#0F172A] tracking-tight">VisionGuard AI</p>
+            <p className="text-[10px] text-[#94A3B8] uppercase tracking-widest">DR Screening</p>
           </div>
         </div>
       </div>
@@ -47,10 +47,10 @@ export default function Sidebar({ user }: SidebarProps) {
             key={to}
             to={to}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2 text-sm transition-colors relative ${
+              `flex items-center gap-3 px-3 py-2 text-sm rounded transition-colors relative ${
                 isActive
-                  ? "text-[#F9FAFB] before:absolute before:left-0 before:top-1 before:bottom-1 before:w-[2px] before:bg-[#0EA5E9] before:rounded-r"
-                  : "text-[#6B7280] hover:text-[#D1D5DB]"
+                  ? "bg-[#EFF6FF] text-[#2563EB] border-l-2 border-[#2563EB] pl-[10px]"
+                  : "text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#0F172A]"
               }`
             }
           >
@@ -60,16 +60,16 @@ export default function Sidebar({ user }: SidebarProps) {
         ))}
       </nav>
 
-      {/* User info */}
-      <div className="px-3 py-4 border-t border-[#1F2937]">
+      {/* User + logout */}
+      <div className="px-3 py-4 border-t border-[#E2E8F0]">
         {user && (
-          <div className="px-3 py-2 mb-2">
-            <p className="text-xs text-[#6B7280] truncate">{user.email}</p>
+          <div className="px-3 py-1.5 mb-1">
+            <p className="text-xs text-[#94A3B8] truncate">{user.email}</p>
           </div>
         )}
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 w-full px-3 py-2.5 rounded text-sm text-[#6B7280] hover:text-[#EF4444] hover:bg-[#EF4444]/5 transition-colors"
+          className="flex items-center gap-3 w-full px-3 py-2 rounded text-sm text-[#64748B] hover:bg-[#FEF2F2] hover:text-[#DC2626] transition-colors"
         >
           <LogOut className="w-4 h-4 flex-shrink-0" />
           Sign out

@@ -9,9 +9,9 @@ import type { User } from "@supabase/supabase-js";
 
 const MOBILE_NAV = [
   { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-  { to: "/analyze", icon: ScanLine, label: "Analyze" },
-  { to: "/history", icon: Clock, label: "History" },
-  { to: "/about", icon: Info, label: "About" },
+  { to: "/analyze",   icon: ScanLine,        label: "Analyze"   },
+  { to: "/history",   icon: Clock,           label: "History"   },
+  { to: "/about",     icon: Info,            label: "About"     },
 ];
 
 interface AppShellProps {
@@ -56,44 +56,39 @@ export default function AppShell({ children }: AppShellProps) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0A0E1A] flex items-center justify-center">
-        <div className="w-6 h-6 border-2 border-[#0EA5E9]/30 border-t-[#0EA5E9] rounded-full animate-spin" />
+      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
+        <div className="w-5 h-5 border-2 border-[#E2E8F0] border-t-[#2563EB] rounded-full animate-spin" />
       </div>
     );
   }
 
   if (isMobile) {
     return (
-      <div className="min-h-screen bg-[#0A0E1A] flex flex-col">
-        {/* Mobile header */}
-        <header className="h-14 bg-[#111827] border-b border-[#1F2937] flex items-center justify-between px-4">
+      <div className="min-h-screen bg-[#F8FAFC] flex flex-col">
+        <header className="h-13 bg-white border-b border-[#E2E8F0] flex items-center justify-between px-4">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded bg-[#0EA5E9]/10 border border-[#0EA5E9]/20 flex items-center justify-center">
-              <Eye className="w-3.5 h-3.5 text-[#0EA5E9]" />
-            </div>
-            <span className="text-sm font-semibold text-[#F9FAFB]">VisionGuard AI</span>
+            <Eye className="w-4 h-4 text-[#2563EB]" />
+            <span className="text-sm font-semibold text-[#0F172A]">VisionGuard AI</span>
           </div>
-          <button onClick={handleLogout} className="text-[#6B7280] hover:text-[#EF4444]">
+          <button onClick={handleLogout} className="text-[#94A3B8] hover:text-[#DC2626] transition-colors">
             <LogOut className="w-4 h-4" />
           </button>
         </header>
 
-        {/* Content */}
         <main className="flex-1 overflow-auto pb-16">{children}</main>
 
-        {/* Bottom nav */}
-        <nav className="fixed bottom-0 left-0 right-0 h-16 bg-[#111827] border-t border-[#1F2937] flex items-center">
+        <nav className="fixed bottom-0 left-0 right-0 h-14 bg-white border-t border-[#E2E8F0] flex items-center">
           {MOBILE_NAV.map(({ to, icon: Icon, label }) => (
             <NavLink
               key={to}
               to={to}
               className={({ isActive }) =>
-                `flex-1 flex flex-col items-center justify-center gap-1 py-2 text-[10px] transition-colors ${
-                  isActive ? "text-[#0EA5E9]" : "text-[#6B7280]"
+                `flex-1 flex flex-col items-center justify-center gap-0.5 py-2 text-[10px] transition-colors ${
+                  isActive ? "text-[#2563EB]" : "text-[#94A3B8]"
                 }`
               }
             >
-              <Icon className="w-5 h-5" />
+              <Icon className="w-4 h-4" />
               {label}
             </NavLink>
           ))}
@@ -103,7 +98,7 @@ export default function AppShell({ children }: AppShellProps) {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0E1A] flex">
+    <div className="min-h-screen bg-[#F8FAFC] flex">
       <Sidebar user={user} />
       <main className="ml-[240px] flex-1 min-h-screen overflow-auto">{children}</main>
     </div>

@@ -1,7 +1,6 @@
 import type { Config } from "tailwindcss";
 
 export default {
-  darkMode: ["class"],
   content: [
     "./pages/**/*.{ts,tsx}",
     "./components/**/*.{ts,tsx}",
@@ -50,18 +49,17 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        // Clinical palette
-        "cv-bg": "#0A0E1A",
-        "cv-surface": "#111827",
-        "cv-border": "#1F2937",
-        "cv-cyan": "#0EA5E9",
-        "cv-emerald": "#10B981",
-        "cv-yellow": "#EAB308",
-        "cv-amber": "#F59E0B",
-        "cv-orange": "#F97316",
-        "cv-red": "#EF4444",
-        "cv-text": "#F9FAFB",
-        "cv-muted": "#6B7280",
+        // Design system tokens
+        "ds-bg":       "#FFFFFF",
+        "ds-surface":  "#F8FAFC",
+        "ds-border":   "#E2E8F0",
+        "ds-blue":     "#2563EB",
+        "ds-blue-bg":  "#EFF6FF",
+        "ds-text":     "#0F172A",
+        "ds-muted":    "#64748B",
+        "ds-success":  "#16A34A",
+        "ds-warning":  "#D97706",
+        "ds-critical": "#DC2626",
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -69,30 +67,21 @@ export default {
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
-        mono: ["'JetBrains Mono'", "ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
+        mono: ["ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
       },
       keyframes: {
         "accordion-down": {
           from: { height: "0" },
-          to: { height: "var(--radix-accordion-content-height)" },
+          to:   { height: "var(--radix-accordion-content-height)" },
         },
         "accordion-up": {
           from: { height: "var(--radix-accordion-content-height)" },
-          to: { height: "0" },
-        },
-        "skeleton-shimmer": {
-          "0%": { backgroundPosition: "-200px 0" },
-          "100%": { backgroundPosition: "calc(200px + 100%) 0" },
+          to:   { height: "0" },
         },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
-        "accordion-up": "accordion-up 0.2s ease-out",
-        "skeleton": "skeleton-shimmer 1.5s infinite",
-      },
-      backgroundImage: {
-        "skeleton-gradient":
-          "linear-gradient(90deg, #111827 25%, #1F2937 50%, #111827 75%)",
+        "accordion-up":   "accordion-up 0.2s ease-out",
       },
     },
   },
